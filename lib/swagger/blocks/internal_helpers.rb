@@ -14,7 +14,23 @@ module Swagger
           next unless swaggered_class.respond_to?(:_swagger_nodes, true)
           swagger_nodes = swaggered_class.send(:_swagger_nodes)
           root_node = swagger_nodes[:root_node]
-          root_nodes << root_node if root_node
+          if root_node
+            if root_nodes.empty?
+              root_nodes.append(root_node)
+            else
+              root = root_nodes.first
+              root_node.data.each do |key, value|
+                unless root.data[key]
+                  root.key(key, value)
+                  next
+                # TODO: else also assign the value. except for Node
+                end
+                if value.is_a?(Node)
+                  root.data[key].keys(value.data)
+                end
+              end
+            end
+          end
 
           # 2.0
           if swagger_nodes[:path_node_map]
@@ -24,7 +40,7 @@ module Swagger
             schema_node_map.merge!(swagger_nodes[:schema_node_map])
           end
         end
-        data = {root_node: self.limit_root_node(root_nodes)}
+        data = {root_node: self.ensure_root_node(root_nodes)}
         if data[:root_node].is_swagger_2_0?
           data[:path_nodes] = path_node_map
           data[:schema_nodes] = schema_node_map
@@ -37,13 +53,10 @@ module Swagger
 
       # Make sure there is exactly one root_node and return it.
       # TODO should this merge the contents of the root nodes instead?
-      def self.limit_root_node(root_nodes)
+      def self.ensure_root_node(root_nodes)
         if root_nodes.length == 0
           raise Swagger::Blocks::DeclarationError.new(
             'swagger_root must be declared')
-        elsif root_nodes.length > 1
-          raise Swagger::Blocks::DeclarationError.new(
-            'Only one swagger_root declaration is allowed.')
         end
         root_nodes.first
       end

@@ -213,6 +213,17 @@ class PetControllerV2
 
 end
 
+class PetControllerV3
+  include Swagger::Blocks
+
+  swagger_root do
+    key :swagger, '2.0'
+    info do
+      contact name: 'PoshVine and Wordnik API Team'
+    end
+  end
+end
+
 class PetV2
   include Swagger::Blocks
 
@@ -299,7 +310,8 @@ describe 'Swagger::Blocks v2' do
       swaggered_classes = [
         PetControllerV2,
         PetV2,
-        ErrorModelV2
+        ErrorModelV2,
+        PetControllerV3
       ]
       actual = Swagger::Blocks.build_root_json(swaggered_classes)
       actual = JSON.parse(actual.to_json)  # For access consistency.
@@ -318,7 +330,7 @@ describe 'Swagger::Blocks v2' do
       expect(actual).to eq(data)
     end
     it 'is idempotent' do
-      swaggered_classes = [PetControllerV2, PetV2, ErrorModelV2]
+      swaggered_classes = [PetControllerV2, PetV2, ErrorModelV2, PetControllerV3]
       actual = JSON.parse(Swagger::Blocks.build_root_json(swaggered_classes).to_json)
       data = JSON.parse(RESOURCE_LISTING_JSON_V2)
       expect(actual).to eq(data)
@@ -326,11 +338,6 @@ describe 'Swagger::Blocks v2' do
     it 'errors if no swagger_root is declared' do
       expect {
         Swagger::Blocks.build_root_json([])
-      }.to raise_error(Swagger::Blocks::DeclarationError)
-    end
-    it 'errors if multiple swagger_roots are declared' do
-      expect {
-        Swagger::Blocks.build_root_json([PetControllerV2, PetControllerV2])
       }.to raise_error(Swagger::Blocks::DeclarationError)
     end
   end
